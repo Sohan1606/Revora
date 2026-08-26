@@ -39,3 +39,5 @@ Thumbs.db
 database/corpus_export.csv
 backend/corpus*.db
 backend/revora_local.db
+
+frontend/tsconfig.tsbuildinfo
