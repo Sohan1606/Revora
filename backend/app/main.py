@@ -20,7 +20,7 @@ def create_app() -> FastAPI:
         docs_url="/api/docs",
         openapi_url="/api/openapi.json",
     )
-        if _settings.AUTO_CREATE_TABLES:
+    if _settings.AUTO_CREATE_TABLES:
         # from-imports only: a bare `import app.infrastructure.models` rebinds
         # the local name `app` to the module and shadows the FastAPI instance
         # (deployment-only crash found on Render — fixed + regression-tested).
