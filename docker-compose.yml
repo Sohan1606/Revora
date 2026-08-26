@@ -1,0 +1,22 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: revora-db
+    restart: unless-stopped
+    environment:
+      # LOCAL DEV ONLY — real credentials live in backend/.env (never committed)
+      POSTGRES_USER: revora
+      POSTGRES_PASSWORD: revora
+      POSTGRES_DB: revora
+    ports:
+      - "5432:5432"
+    volumes:
+      - revora_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U revora -d revora"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  revora_pgdata:

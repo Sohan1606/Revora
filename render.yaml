@@ -1,0 +1,36 @@
+# REVORA — deployment configuration
+# Render Blueprint for the FastAPI backend (Test Mode only, no real-money paths).
+services:
+  - type: web
+    name: revora-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false # set in dashboard: Supabase pooler connection string
+      - key: CORS_ORIGINS
+        sync: false # set in dashboard: your Vercel frontend URL
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: AUTO_CREATE_TABLES
+        value: true
+      - key: RATE_LIMIT_ENABLED
+        value: true
+      - key: MESSAGING_MODE
+        value: simulated
+      - key: RAZORPAY_KEY_ID
+        sync: false # OPTIONAL: Razorpay Test Mode keys (rzp_test_*)
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false

@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-zinc-950 text-zinc-100 antialiased;
+}
+
+.card {
+  @apply rounded-lg border border-zinc-800 bg-zinc-900/60 p-4;
+}
+
+.btn {
+  @apply rounded-md px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed;
+}
+
+.btn-primary {
+  @apply rounded-md px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed;
+  @apply bg-red-800 hover:bg-red-700 text-white;
+}
+
+.btn-ghost {
+  @apply rounded-md px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed;
+  @apply border border-zinc-700 hover:border-zinc-500 text-zinc-200;
+}
+
+.input {
+  @apply rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm focus:border-red-700 focus:outline-none w-full;
+}
+
+.badge {
+  @apply inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-medium;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
