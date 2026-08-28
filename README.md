@@ -1,6 +1,9 @@
 > 🎯 **Razorpay AI Buildathon · Track: AI Revenue Recovery**
 >
 > **[▶ LIVE DEMO](https://revora-eight-beta.vercel.app)** ·
+
+https://drive.google.com/file/d/1AWgf1nxVoheuKMe7b25wWUwrdXZtwRD-/view?usp=sharing
+
 > [![CI](https://github.com/Sohan1606/Revora/actions/workflows/ci.yml/badge.svg)](https://github.com/Sohan1606/Revora/actions/workflows/ci.yml) ·
 > 129 backend tests · 18/18 browser E2E · npm audit 0 · pip_audit clean
 >
