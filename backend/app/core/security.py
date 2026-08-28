@@ -55,3 +55,31 @@ def verify_supabase_token(token: str, secret: str) -> dict[str, Any]:
         audience=SUPABASE_AUDIENCE, leeway=LEEWAY_SECONDS,
         options={"verify_iss": False},
     )
+
+
+def supabase_claims_via_provider(
+    token: str, supabase_url: str, service_key: str, *, transport: Any = None,
+) -> dict[str, Any] | None:
+    """Provider-side token verification: ask Supabase itself if the token is
+    valid (GET /auth/v1/user). Works for legacy HS256 projects AND the newer
+    asymmetric signing-key system, where no local secret can verify tokens.
+    Returns normalized claims {sub, email, ...} or None when invalid.
+    `transport` is injectable for tests."""
+    import httpx
+
+    url = f"{supabase_url.rstrip('/')}/auth/v1/user"
+    try:
+        with httpx.Client(transport=transport, timeout=10.0) as client:
+            response = client.get(
+                url, headers={"apikey": service_key,
+                              "Authorization": f"Bearer {token}"})
+    except httpx.HTTPError:
+        return None
+    if response.status_code != 200:
+        return None
+    user = response.json() or {}
+    if not user.get("id"):
+        return None
+    # normalize to the claim shape the rest of the system expects
+    return {"sub": user["id"], "email": user.get("email"),
+            "aud": SUPABASE_AUDIENCE}

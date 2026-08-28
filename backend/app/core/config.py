@@ -75,8 +75,13 @@ class Settings(BaseSettings):
 
     @property
     def auth_mode(self) -> str:
-        """'supabase' once a JWT secret is configured; 'dev' otherwise (local only path)."""
-        return "supabase" if self.SUPABASE_JWT_SECRET else "dev"
+        """'supabase' when any Supabase verification path is configured (local
+        HS256 secret and/or provider-side via URL+service key); else 'dev'."""
+        if self.SUPABASE_JWT_SECRET:
+            return "supabase"
+        if self.SUPABASE_URL and self.SUPABASE_SERVICE_ROLE_KEY:
+            return "supabase"
+        return "dev"
 
     # Hardening (Phase 13). Tests disable this via autouse fixture; default ON.
     RATE_LIMIT_ENABLED: bool = True

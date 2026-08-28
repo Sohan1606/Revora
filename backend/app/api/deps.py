@@ -24,6 +24,53 @@ _bearer = HTTPBearer(auto_error=False)
 
 ROLE_LEVEL = {"viewer": 1, "operator": 2, "admin": 3, "owner": 4}
 
+# Provider-verification cache: token-hash → (expires_at, claims). Bounded + TTL'd
+# so the fast local path remains the common case and the provider is asked at
+# most once per token per 5 minutes per process.
+_provider_cache: dict[str, tuple[float, dict]] = {}
+_PROVIDER_TTL_SECONDS = 300
+_PROVIDER_CACHE_MAX = 512
+
+
+def resolve_supabase_claims(token: str, settings=None) -> dict | None:
+    """Verify a Supabase access token by the best available method.
+
+    1. Local HS256 verification (fast; requires a correct SUPABASE_JWT_SECRET —
+       legacy projects).
+    2. Provider-side verification via GET /auth/v1/user (works for the newer
+       asymmetric signing-key system too), cached for 5 minutes.
+
+    Returns claims dict or None when the token is invalid by both paths."""
+    import hashlib
+    import time
+
+    from app.core.security import supabase_claims_via_provider, verify_supabase_token
+
+    settings = settings or get_settings()
+
+    if settings.SUPABASE_JWT_SECRET:
+        try:
+            return verify_supabase_token(token, settings.SUPABASE_JWT_SECRET)
+        except jwt.PyJWTError:
+            pass  # fall through to provider verification
+
+    if not (settings.SUPABASE_URL and settings.SUPABASE_SERVICE_ROLE_KEY):
+        return None
+
+    key = hashlib.sha256(token.encode()).hexdigest()
+    now = time.monotonic()
+    cached = _provider_cache.get(key)
+    if cached and cached[0] > now:
+        return cached[1]
+
+    claims = supabase_claims_via_provider(
+        token, settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
+    if claims is not None:
+        if len(_provider_cache) >= _PROVIDER_CACHE_MAX:
+            _provider_cache.clear()
+        _provider_cache[key] = (now + _PROVIDER_TTL_SECONDS, claims)
+    return claims
+
 
 def _resolve_supabase_user(db: Session, claims: dict[str, Any]) -> "User | None":
     """Resolve a verified Supabase JWT to a REVORA user.
@@ -81,7 +128,9 @@ def get_current_user(
 
     try:
         if settings.auth_mode == "supabase":
-            claims = verify_supabase_token(token, settings.SUPABASE_JWT_SECRET)
+            claims = resolve_supabase_claims(token, settings)
+            if claims is None:
+                raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or expired token")
             user = _resolve_supabase_user(db, claims)
         else:
             if not settings.DEV_JWT_SECRET:

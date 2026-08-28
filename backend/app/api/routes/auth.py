@@ -96,14 +96,14 @@ def supabase_login(
     if not ok:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, token_or_error)
 
-    # Validate the issued token against OUR configured secret and resolve the
-    # user (first login JIT-provisions merchant + owner — audited).
-    try:
-        claims = verify_supabase_token(token_or_error, settings.SUPABASE_JWT_SECRET)
-    except Exception:
+    # Verify the issued token (local HS256 when configured, else provider-side)
+    # and resolve the user — first login JIT-provisions merchant + owner (audited).
+    claims = deps.resolve_supabase_claims(token_or_error, settings)
+    if claims is None:
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE,
-            "Auth misconfigured: SUPABASE_JWT_SECRET does not match the provider.",
+            "Could not verify the issued session token (SUPABASE_URL / "
+            "SUPABASE_SERVICE_ROLE_KEY misconfigured).",
         )
     user = deps._resolve_supabase_user(db, claims)
     if user is None or not user.is_active:
