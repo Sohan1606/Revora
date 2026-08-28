@@ -15,6 +15,7 @@ export default function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [serverOk, setServerOk] = useState<boolean | null>(null);
@@ -71,15 +72,18 @@ export default function Login() {
     setBusy(true);
     setError(null);
     try {
-      const res = await api<{ access_token: string }>("/auth/login", {
+      const path = mode === "signin" ? "/auth/login" : "/auth/signup";
+      const res = await api<{ access_token: string }>(path, {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
       await finish(res.access_token);
     } catch (err: any) {
-      if (err?.status === 429) setError("Too many sign-in attempts — wait a minute and retry.");
+      if (err?.status === 429) setError("Too many attempts — wait a minute and retry.");
       else if (err?.status === 401) setError(err.message || "Invalid email or password.");
-      else if (err?.status === 503) setError("Server auth is misconfigured (Supabase JWT secret mismatch).");
+      else if (err?.status === 403) setError(err.message || "Account created but email confirmation is required.");
+      else if (err?.status === 409) setError(err.message || "Account already exists — sign in instead.");
+      else if (err?.status === 503) setError("Server auth is misconfigured (contact the owner).");
       else setError(err?.message ?? "Login failed");
     } finally {
       setBusy(false);
@@ -123,6 +127,30 @@ export default function Login() {
 
         {production ? (
           <>
+            <div className="flex gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() => { setMode("signin"); setError(null); }}
+                className={`flex-1 rounded-md border px-3 py-2 ${
+                  mode === "signin"
+                    ? "border-red-800 bg-red-950/40 text-zinc-100"
+                    : "border-zinc-700 text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                Sign in
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMode("signup"); setError(null); }}
+                className={`flex-1 rounded-md border px-3 py-2 ${
+                  mode === "signup"
+                    ? "border-red-800 bg-red-950/40 text-zinc-100"
+                    : "border-zinc-700 text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                Create account
+              </button>
+            </div>
             <div>
               <label className="mb-1 block text-xs text-zinc-400">Email</label>
               <input
@@ -142,23 +170,31 @@ export default function Login() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
+                autoComplete={mode === "signin" ? "current-password" : "new-password"}
                 required
                 minLength={6}
               />
+              {mode === "signup" && (
+                <div className="mt-1 text-[11px] text-zinc-500">
+                  Any email + password (6+ chars) — creates your own demo workspace instantly.
+                </div>
+              )}
             </div>
             {error && (
               <div className="rounded border border-red-800 bg-red-950/60 px-3 py-3 text-sm text-red-200">
-                <div className="mb-1 font-semibold">Sign-in failed</div>
+                <div className="mb-1 font-semibold">
+                  {mode === "signin" ? "Sign-in failed" : "Sign-up failed"}
+                </div>
                 {error}
               </div>
             )}
             <button className="btn-primary w-full" disabled={busy}>
-              {busy ? "Signing in…" : "Sign in"}
+              {busy ? "Working…" : mode === "signin" ? "Sign in" : "Create account & sign in"}
             </button>
             <p className="text-[11px] leading-relaxed text-zinc-600">
-              Production sign-in runs through Supabase Auth. Your first login
-              automatically creates your merchant workspace with the owner role.
+              {mode === "signin"
+                ? "Sign-in runs through Supabase Auth. First login provisions your merchant workspace with the owner role."
+                : "Account creation runs through Supabase Auth — your workspace is created on the spot, nothing is pre-filled."}
             </p>
           </>
         ) : (
