@@ -1,3 +1,13 @@
+> 🎯 **Razorpay AI Buildathon · Track: AI Revenue Recovery**
+>
+> **[▶ LIVE DEMO](https://revora-eight-beta.vercel.app)** ·
+> [![CI](https://github.com/Sohan1606/Revora/actions/workflows/ci.yml/badge.svg)](https://github.com/Sohan1606/Revora/actions/workflows/ci.yml) ·
+> 129 backend tests · 18/18 browser E2E · npm audit 0 · pip_audit clean
+>
+> **Sign in to the live demo:** create your own account (email + password) — your first
+> login provisions your merchant workspace with the owner role. Then open **Demo Lab →
+> Run scenario** to watch a full recovery decision with all evidence.
+
 # REVORA — Revenue Recovery Decision Intelligence
 
 **Razorpay AI Buildathon · Track 03: AI Revenue Recovery**
