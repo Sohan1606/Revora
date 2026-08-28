@@ -76,6 +76,10 @@ def run_scenario(
     if decision.status == "approved_by_policy":
         execution = execute_decision(db, decision)
 
+    from app.api.routes.recovery import candidates_payload
+    decision_explanation = {**decision.explanation,
+                            "candidates": candidates_payload(db, decision.id)}
+
     rng = random.Random(f"{case.id}")
     recovered = (body.outcome == "recovered" or
                  (body.outcome == "random" and rng.random() < 0.6))
@@ -96,7 +100,7 @@ def run_scenario(
                      "status": decision.status,
                      "expected_recovery_paise": decision.expected_recovery_paise,
                      "model_version": decision.model_version,
-                     "explanation": decision.explanation},
+                     "explanation": decision_explanation},
         "execution": ({"status": execution.status, "result": execution.result,
                        "error": execution.error} if execution else None),
         "outcome": ({"outcome": outcome.outcome,

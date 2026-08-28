@@ -59,7 +59,7 @@ async function run() {
     // console sign-in flow
     await page.goto(BASE + "/#/console", { waitUntil: "networkidle" });
     await page.waitForURL("**/login**", { timeout: 8000 }).catch(() => {});
-    await page.getByText("Sign in", { exact: true }).click();
+    await page.getByText("Owner (full access)").click();
     await page.waitForURL("**/console**", { timeout: 8000 });
     record("dev login redirects to console", page.url().includes("/console"));
     await page.getByText("Control Center", { exact: true }).first().waitFor({ timeout: 8000 });
@@ -82,11 +82,15 @@ async function run() {
     );
     await page.screenshot({ path: `${SHOTS}/03-console-control-center.png` });
 
-    // demo lab: run a scenario end-to-end
+    // Demo Lab: run a scenario end-to-end (candidate table must have ROWS, not
+    // just the heading — regression: empty table when explanation lost candidates)
     await page.goto(BASE + "/#/console/simulator", { waitUntil: "networkidle" });
     await page.getByRole("button", { name: /Run scenario/i }).click();
     await page.getByText("Candidate actions evaluated").waitFor({ timeout: 8000 });
-    record("simulator runs scenario with candidate table", true);
+    await page.waitForTimeout(400); // rows render right after the heading
+    const candidateRows = await page.locator("table tbody tr").count();
+    record("simulator runs scenario with candidate table",
+      candidateRows >= 3, `candidate rows=${candidateRows}`);
     await page.screenshot({ path: `${SHOTS}/04-console-demo-lab.png` });
 
     // cases list + detail
@@ -192,7 +196,7 @@ async function run() {
 
     await page.goto(BASE + "/#/console", { waitUntil: "networkidle" });
     await page.waitForURL("**/login**", { timeout: 8000 }).catch(() => {});
-    await page.getByText("Sign in", { exact: true }).click();
+    await page.getByText("Owner (full access)").click();
     await page.waitForURL("**/console**", { timeout: 8000 });
     await page.getByText("Control Center", { exact: true }).first().waitFor({ timeout: 8000 });
     const overflow2 = await page.evaluate(

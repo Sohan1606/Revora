@@ -131,6 +131,8 @@ def test_decide_rbac_and_flow(client):
     body = r.json()
     assert body["chosen_action"] in ("wait", "send_message")
     decision_id = body["decision_id"]
+    candidates = body["explanation"]["candidates"]
+    assert len(candidates) >= 3  # populated evidence, not an empty table
     # executing requires operator
     r = client.post(f"/api/recovery/decisions/{decision_id}/execute", headers=_hdr(client, "op@t.io"))
     assert r.status_code == 200
@@ -300,6 +302,12 @@ def test_simulator_scenario_full_trace(client):
     assert body["decision"]["action"] in ("request_method_update", "offer_alternative_method")
     assert body["execution"]["result"]["simulated"] is True
     assert body["outcome"]["source"] == "simulator"
+    # candidate evidence must be POPULATED (regression: empty table after refactor)
+    candidates = body["decision"]["explanation"]["candidates"]
+    assert len(candidates) >= 3, f"candidates missing from simulator trace: {candidates}"
+    fields = {"action", "p_recovery", "ev_paise", "cost_paise", "policy"}
+    assert all(fields <= set(c) for c in candidates)
+    assert any(c["policy"] != "allowed" for c in candidates)  # something IS blocked (rule name shown)
 
 
 def test_simulator_unknown_scenario(client):

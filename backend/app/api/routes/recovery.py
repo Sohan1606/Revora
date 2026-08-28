@@ -141,6 +141,22 @@ def case_detail(
     }
 
 
+def candidates_payload(db: Session, decision_id) -> list[dict]:
+    """Serialized candidate evidence for a decision (used by /decide, simulator,
+    and case detail — the audit-trail requirement)."""
+    rows = db.execute(
+        select(CandidateAction).where(CandidateAction.decision_id == decision_id)
+    ).scalars().all()
+    return [
+        {"action": c.action_type, "p_recovery": float(c.p_recovery),
+         "ev_paise": c.expected_value_paise,
+         "cost_paise": c.intervention_cost_paise,
+         "policy": ("allowed" if c.allowed_by_policy else
+                    (c.blocked_reason or "blocked").split(":")[0])}
+        for c in rows
+    ]
+
+
 @router.post("/cases/{case_id}/decide", status_code=status.HTTP_201_CREATED)
 def decide_case(
     case_id: str,
@@ -152,6 +168,8 @@ def decide_case(
         decision, arm = route_decision(db, case)
     except ValueError as exc:
         raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
+    explanation = {**decision.explanation,
+                   "candidates": candidates_payload(db, decision.id)}
     return {
         "decision_id": str(decision.id),
         "chosen_action": decision.chosen_action,
@@ -160,7 +178,7 @@ def decide_case(
         "model_version": decision.model_version,
         "experiment_arm": arm,
         "case_state": case.state,
-        "explanation": decision.explanation,
+        "explanation": explanation,
     }
 
 
